@@ -29,8 +29,8 @@ pub fn input_generator_part2(input: &str) -> Vec<u32> {
             accum.clone().intersection(&item.clone()).map(|c| *c ).collect::<HashSet<char>>()
         });
 
-        let res = folded.iter().next().unwrap()
-        let mut cc = *c as u32;
+        let res = folded.iter().next().unwrap();
+        let mut cc = *res as u32;
         if res.is_uppercase() {
             cc = cc + 58;
         }
