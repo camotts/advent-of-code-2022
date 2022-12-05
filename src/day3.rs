@@ -4,9 +4,9 @@ use std::collections::HashSet;
 pub fn input_generator(input: &str) -> Vec<u32> {
     input.lines().map(|l| {
         let (a, b) = l.split_at(l.chars().count()/2);
-        let aHash = a.chars().collect::<HashSet<char>>();
-        let bHash = b.chars().collect::<HashSet<char>>();
-        let res = aHash.intersection(&bHash).next().unwrap();
+        let a_hash = a.chars().collect::<HashSet<char>>();
+        let b_hash = b.chars().collect::<HashSet<char>>();
+        let res = a_hash.intersection(&b_hash).next().unwrap();
         let mut cc = *res as u32;
         if res.is_uppercase() {
             cc = cc + 58;
@@ -20,12 +20,12 @@ pub fn input_generator(input: &str) -> Vec<u32> {
 #[aoc_generator(day3, part2)]
 pub fn input_generator_part2(input: &str) -> Vec<u32> {
     input.split("\n").collect::<Vec<&str>>().chunks(3).map(|chunk| {
-        let mut chunkVec = chunk.iter().flat_map(|item| {
+        let chunk_vec = chunk.iter().flat_map(|item| {
             vec![item.chars().collect::<HashSet<char>>()]
         }).collect::<Vec<HashSet<char>>>();
-        let mut inter = chunkVec[0].clone();
+        let inter = chunk_vec[0].clone();
 
-        let folded = chunkVec.iter().fold(inter, |accum, item| {
+        let folded = chunk_vec.iter().fold(inter, |accum, item| {
             accum.clone().intersection(&item.clone()).map(|c| *c ).collect::<HashSet<char>>()
         });
 
