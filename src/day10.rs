@@ -49,8 +49,6 @@ pub fn part2(input: &Input) -> String {
     for i in 0..6 {
         for j in 0..40 {
             let curr = *cycle.iter().nth((i*40)+j).unwrap();
-            let idx: i64 = ((i*40)+j).try_into().unwrap();
-            let n = idx - ((i as i64 - 1) * 39);
             if curr == j as i64 || curr == j as i64 + 1 || curr == j as i64 - 1 {
                 ret += &"#".to_string();
             } else {
