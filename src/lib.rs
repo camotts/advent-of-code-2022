@@ -1,4 +1,6 @@
 #![feature(binary_heap_into_iter_sorted)]
+//todo remove
+#![feature(iter_intersperse)]
 
 extern crate aoc_runner;
 
@@ -17,5 +19,6 @@ pub mod day9;
 pub mod day10;
 pub mod day11;
 pub mod day12;
+pub mod day13;
 
 aoc_lib!{ year = 2022 }

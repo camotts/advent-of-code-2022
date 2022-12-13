@@ -1,5 +1,5 @@
-use std::collections::HashSet;
 use std::collections::HashMap;
+use std::collections::VecDeque;
 
 type Input = Vec<Vec<Tile>>;
 
@@ -15,7 +15,7 @@ impl Tile {
         match *self {
             Tile::Start => 0,
             Tile::End => 25,
-            Tile::Tile(x) => x as u32 - 97,
+            Tile::Tile(x) => x as u32 - b'a' as u32,
         }
     }
 }
@@ -33,170 +33,160 @@ pub fn input_generator(input: &str) -> Input {
 
 #[aoc(day12, part1)]
 pub fn part1(input: &Input) -> u32 {
-    let mut traversed = HashSet::new();
-    //traversed.insert((0,0));
-    //traversed.insert((1,0));
-    //print(input, &mut traversed);
-    //0
-    //let dist = traverse(input, &mut traversed, (20,0));
-    let dist = traverse(input, &mut traversed, (0,0));
-    //print(input, &traversed);
-    dist
-}
-
-#[derive(Clone, Debug)]
-pub struct Node {
-    pos: (usize, usize),
-    parent: Option<Box<Node>>,
-}
-
-pub fn traverse(grid: &Vec<Vec<Tile>>, traversed: &mut HashSet<(usize, usize)>, current: (usize, usize)) -> u32 {
-    traversed.insert(current);
-    let mut queue: Vec<Node> = vec![Node{
-        pos: current,
-        parent: None,
-    }];
-    let mut ret = 0;
-    while !queue.is_empty() {
-        //print(grid, &traversed);
-        let curr = queue.pop().unwrap();
-        println!("{:?}", grid[curr.pos.0][curr.pos.1]);
-        if grid[curr.pos.0][curr.pos.1] == Tile::End {
-            let mut test = HashMap::new();
-            let mut prev = Some(Box::new(curr.clone()));
-            let mut tmp = curr.parent;
-            while tmp.is_some() {
-                ret += 1;
-                println!("{:?}", tmp.clone().unwrap().pos);
-
-                let mut ch = ' ';
-                if tmp.clone().unwrap().pos.0 > prev.clone().unwrap().pos.0 {
-                    ch = '^';
-                }
-                if tmp.clone().unwrap().pos.0 < prev.clone().unwrap().pos.0 {
-                    ch = 'v';
-                }
-                if tmp.clone().unwrap().pos.1 < prev.clone().unwrap().pos.1 {
-                    ch = '>';
-                }
-                if tmp.clone().unwrap().pos.1 > prev.clone().unwrap().pos.1 {
-                    ch = '<';
-                }
-
-                test.insert(tmp.clone().unwrap().pos, ch);
-                tmp = tmp.clone().unwrap().parent;
-                prev = prev.clone().unwrap().parent;
+    let mut traversed = HashMap::new();
+    let start = input.iter().enumerate().find_map(|(i, lines)| {
+        lines.iter().enumerate().find_map(|(j, t)| {
+            if *t == Tile::Start {
+                Some((i,j))
+            } else {
+                None
             }
-            print(grid, &test, false);
-            //println!("{:?}", curr);
-            return ret
+        })
+    }).unwrap();
+
+    let end = input.iter().enumerate().find_map(|(i, lines)| {
+        lines.iter().enumerate().find_map(|(j, t)| {
+            if *t == Tile::End {
+                Some((i,j))
+            } else {
+                None
+            }
+        })
+    }).unwrap();
+
+    let mut queue: VecDeque<(usize, usize)> = vec![start].into();
+    let mut ret = 0;
+    while let Some(curr) = queue.pop_front() {
+        if input[curr.0][curr.1] == Tile::End {
+            break
         }
         let mut adjacents = vec![];
-        if curr.pos.0 > 0 {
-            if !traversed.contains(&(curr.pos.0-1, curr.pos.1)) {
-                adjacents.push((curr.pos.0-1, curr.pos.1))
+        if curr.0 > 0 {
+            if !traversed.contains_key(&(curr.0-1, curr.1)) {
+                adjacents.push((curr.0-1, curr.1))
             }
         }
-        if curr.pos.0 < grid.len() - 1 {
-            if !traversed.contains(&(curr.pos.0+1, curr.pos.1)) {
-            adjacents.push((curr.pos.0+1, curr.pos.1))
+        if curr.0 < input.len() - 1 {
+            if !traversed.contains_key(&(curr.0+1, curr.1)) {
+                adjacents.push((curr.0+1, curr.1))
             }
         }
-        if curr.pos.1 > 0 {
-            if !traversed.contains(&(curr.pos.0, curr.pos.1-1)) {
-            adjacents.push((curr.pos.0, curr.pos.1-1))
+        if curr.1 > 0 {
+            if !traversed.contains_key(&(curr.0, curr.1-1)) {
+                adjacents.push((curr.0, curr.1-1))
             }
         }
-        if curr.pos.1 < grid[0].len() - 1 {
-            if !traversed.contains(&(curr.pos.0, curr.pos.1+1)) {
-            adjacents.push((curr.pos.0, curr.pos.1+1))
+        if curr.1 < input[0].len() - 1 {
+            if !traversed.contains_key(&(curr.0, curr.1+1)) {
+                adjacents.push((curr.0, curr.1+1))
             }
         }
         adjacents.iter().filter(|(x,y)|{
-            println!("({},{}): {:?} vs ({},{}): {:?} is  {} > {}: {}", curr.pos.0, curr.pos.1,grid[curr.pos.0][curr.pos.1], x, y, grid[*x][*y], grid[curr.pos.0][curr.pos.1].value() + 1 , grid[*x][*y].value(), grid[curr.pos.0][curr.pos.1].value() + 1 >= grid[*x][*y].value());
-            grid[curr.pos.0][curr.pos.1].value() + 1 >= grid[*x][*y].value()
+            input[curr.0][curr.1].value() + 1 >= input[*x][*y].value()
         }).for_each(|pt| {
-            //println!("Attempting to traverse to ({},{})", pt.0, pt.1);
-            //let mut line = String::new();
-            //std::io::stdin().read_line(&mut line);
-            traversed.insert(*pt);
-            queue.push(Node{
-                pos: pt.clone(),
-                parent: Some(Box::new(curr.clone())),
-            })
+            traversed.insert(*pt, curr);
+            queue.push_back(*pt)
         });
     }
+
+    let mut path = end;
+    while let Some(prev) = traversed.get(&path) {
+        ret += 1;
+
+        if *prev == start {
+            break;
+        }
+        path = *prev;
+    }
+
     ret
 }
 
-pub fn traverse_dfs(grid: &Vec<Vec<Tile>>, traversed: &mut HashSet<(usize, usize)>, current: (usize, usize)) -> u32 {
-    traversed.insert(current);
-    //println!("({:?},{:?}): {:?}", current.0, current.1, grid[current.0][current.1]);
-    //print(grid, &traversed);
-    if grid[current.0][current.1] == Tile::End {
-        return 0
-    }
-    let mut adjacents = vec![];
-    if current.0 > 0 {
-        if !traversed.contains(&(current.0-1, current.1)) {
-            adjacents.push((current.0-1, current.1))
-        }
-    }
-    if current.0 < grid.len() - 1 {
-        if !traversed.contains(&(current.0+1, current.1)) {
-        adjacents.push((current.0+1, current.1))
-        }
-    }
-    if current.1 > 0 {
-        if !traversed.contains(&(current.0, current.1-1)) {
-        adjacents.push((current.0, current.1-1))
-        }
-    }
-    if current.1 < grid[0].len() - 1 {
-        if !traversed.contains(&(current.0, current.1+1)) {
-        adjacents.push((current.0, current.1+1))
-        }
-    }
+#[aoc(day12, part2)]
+pub fn part2(input: &Input) -> u32 {
+    
+    let mut starts = input
+    .iter()
+    .enumerate()
+    .flat_map(|(i, row)| {
+        row.iter()
+            .enumerate()
+            .filter_map(move |(j, v)| if v.value() == 0 { Some((i, j)) } else { None })
+    })
+    .collect::<Vec<(usize, usize)>>();
 
-    let trav: Vec<u32> = adjacents.iter().filter(|(x, y)| {
-        //println!("({},{}): {:?} vs ({},{}): {:?} is  {} > {}: {}", current.0, current.1,grid[current.0][current.1], x, y, grid[*x][*y], grid[current.0][current.1].value() + 1 , grid[*x][*y].value(), grid[current.0][current.1].value() + 1 >= grid[*x][*y].value());
-        grid[current.0][current.1].value() + 1 >= grid[*x][*y].value()
-     }).map(|(x,y)| {
-        //println!("Attempting to traverse to ({},{})", x, y);
-        //let mut line = String::new();
-        //std::io::stdin().read_line(&mut line);
-        traverse(grid, &mut traversed.clone(), (*x,*y))
-    }).collect();
-    //println!("{:?}", adjacents);
-    //println!("Traversal result: {:?}", trav);
-    match trav.iter().min() {
-        Some(x) => x + 1,
-        _ => u32::MAX - 100,
-    }
-}
-
-pub fn print(grid: &Vec<Vec<Tile>>, traversed: &HashMap<(usize, usize), char>, print_grid: bool) {
-    println!("\n\n");
-    for x in 0..grid.len() {
-        for y in 0..grid[x].len() {
-            let mut sym = ' ';
-            match grid[x][y] {
-                Tile::Start => sym = 'S',
-                Tile::End => sym = 'E',
-                Tile::Tile(x) => {
-                    sym = '.';
-                    if print_grid {
-                        sym = x;
-                    }
-                },
+    let end = input.iter().enumerate().find_map(|(i, lines)| {
+        lines.iter().enumerate().find_map(|(j, t)| {
+            if *t == Tile::End {
+                Some((i,j))
+            } else {
+                None
             }
-            if traversed.contains_key(&(x,y)) {
-                sym = *traversed.get(&(x,y)).unwrap();
-            }
+        })
+    }).unwrap();
 
-            print!("{}", sym);
+    let mut min = u32::MAX;
+
+    while let Some(start) = starts.pop() {
+        let mut traversed: HashMap<(usize, usize), (usize, usize)> = HashMap::new();
+        let mut queue: VecDeque<(usize, usize)> = vec![start].into();
+        let mut ret = 0;
+        while let Some(curr) = queue.pop_front() {
+            if input[curr.0][curr.1] == Tile::End {
+                break
+            }
+            let mut adjacents = vec![];
+            if curr.0 > 0 {
+                if !traversed.contains_key(&(curr.0-1, curr.1))
+                    && input[curr.0][curr.1].value() + 1 >= input[curr.0-1][curr.1].value() {
+                    adjacents.push((curr.0-1, curr.1));
+                    traversed.insert((curr.0-1, curr.1), curr);
+                    queue.push_back((curr.0-1, curr.1))
+                }
+            }
+            if curr.0 < input.len() - 1 {
+                if !traversed.contains_key(&(curr.0+1, curr.1))
+                && input[curr.0][curr.1].value() + 1 >= input[curr.0+1][curr.1].value() {
+                    adjacents.push((curr.0+1, curr.1));
+                    traversed.insert((curr.0+1, curr.1), curr);
+                    queue.push_back((curr.0+1, curr.1))
+                }
+            }
+            if curr.1 > 0 {
+                if !traversed.contains_key(&(curr.0, curr.1-1))
+                && input[curr.0][curr.1].value() + 1 >= input[curr.0][curr.1-1].value() {
+                    adjacents.push((curr.0, curr.1-1));
+                    traversed.insert((curr.0, curr.1-1), curr);
+                    queue.push_back((curr.0, curr.1-1))
+                }
+            }
+            if curr.1 < input[0].len() - 1 {
+                if !traversed.contains_key(&(curr.0, curr.1+1))
+                && input[curr.0][curr.1].value() + 1 >= input[curr.0][curr.1+1].value() {
+                    adjacents.push((curr.0, curr.1+1));
+                    traversed.insert((curr.0, curr.1+1), curr);
+                    queue.push_back((curr.0, curr.1+1))
+                }
+            }
         }
-        println!("");
+
+        let mut path = end;
+
+        if !traversed.contains_key(&path) {
+            continue;
+        }
+        while let Some(prev) = traversed.get(&path) {
+            ret += 1;
+
+            if *prev == start {
+                break;
+            }
+            path = *prev;
+        }
+        if ret < min {
+            min = ret
+        }
     }
-    println!("\n\n");
+
+    min
 }
